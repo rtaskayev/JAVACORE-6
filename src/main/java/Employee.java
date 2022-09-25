@@ -1,3 +1,5 @@
+import java.util.Map;
+
 public class Employee {
     public long id;
     public String firstName;
@@ -15,6 +17,20 @@ public class Employee {
         this.lastName = lastName;
         this.country = country;
         this.age = age;
+    }
+
+    // Constructor to create object from map data structure
+    public Employee(Map<String, String> params) {
+        this.id = Long.parseLong(params.get("id"));
+        this.firstName = params.get("firstName");
+        this.lastName = params.get("lastName");
+        this.country = params.get("country");
+        this.age = Integer.parseInt(params.get("age"));
+
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     @Override
