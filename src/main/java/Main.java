@@ -1,57 +1,72 @@
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.bean.ColumnPositionMappingStrategy;
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
+
+import org.w3c.dom.*;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParserConfigurationException, IOException, SAXException {
 
         String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
-        String fileName = "data.csv";
-        String outputJsonFileName = "new_data.json";
+        String fileName = "data.xml";
+        String outputJsonFileName = "data2.json";
 
-        List<Employee> list = parseCSV(columnMapping, fileName); // Parsing CSV file
-        System.out.println("Parsed objects from CSV - " + list);
+        parseXML(fileName);
 
-        String json = listToJson(list); // Converting list of objects to Json data
-        System.out.println("Json data - " + json);
-
-        writeString(json, outputJsonFileName); // Write json data to file
 
     }
 
-    // Method to parse csv into list of objects
-    public static List<Employee> parseCSV(String[] columnMapping, String fileName) {
+    //Method to parse csv into list of objects
+    public static List<Employee> parseXML(String fileName) throws ParserConfigurationException, IOException, SAXException {
 
         List<Employee> list = new ArrayList<>();
 
-        try {
-            CSVReader reader = new CSVReader(new FileReader(fileName));
-            ColumnPositionMappingStrategy<Employee> strategy = new ColumnPositionMappingStrategy<>();
-            strategy.setType(Employee.class);
-            strategy.setColumnMapping(columnMapping);
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new File(fileName));
+        Node root = doc.getDocumentElement();
+        System.out.println("Root element: " + root.getNodeName());
+        read(root);
 
-            CsvToBean<Employee> csv = new CsvToBeanBuilder<Employee>(reader)
-                    .withMappingStrategy(strategy)
-                    .build();
 
-            list = csv.parse();
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
         return list;
     }
+
+    private static void read(Node node) {
+        NodeList nodeList = node.getChildNodes();
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node_ = nodeList.item(i);
+            if (Node.ELEMENT_NODE == node_.getNodeType()) {
+                System.out.println("Name: " + node_.getNodeName());
+                System.out.println("Content: " + node_.getTextContent());
+                //System.out.println("Value: " + node_.getNodeValue());
+                Element element = (Element) node_;
+                NamedNodeMap map = element.getAttributes();
+                for (int a = 0; a < map.getLength(); a++) {
+                    String attrName = map.item(a).getNodeName();
+                    String attrValue = map.item(a).getNodeValue();
+                    System.out.println("Attribute: " + attrName + "; value: " + attrValue);
+                }
+                read(node_);
+            }
+
+        }
+    }
+
+
+
 
     // Method to transfer list of objects to json
     public static String listToJson(List<Employee> list) {
