@@ -1,80 +1,75 @@
-import java.io.*;
-import java.util.*;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
+import com.opencsv.CSVReader;
+import com.opencsv.bean.ColumnPositionMappingStrategy;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException, ParseException {
+    public static void main(String[] args) throws FileNotFoundException {
 
-        String fileName = "new_data.json";
+        String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
+        String fileName = "data.csv";
+        String outputJsonFileName = "new_data.json";
 
-        String json = readString(fileName);
-        System.out.println("JSON String is - " + json);
+        List<Employee> list = parseCSV(columnMapping, fileName); // Parsing CSV file
+        System.out.println("Parsed objects from CSV - " + list);
 
-        List<Employee> list = jsonToList(json);
+        String json = listToJson(list); // Converting list of objects to Json data
+        System.out.println("Json data - " + json);
 
-        printList(list);
-
-
-    }
-
-    public static void printList(List<Employee> list) {
-
-        for (int i = 0; i < list.size(); i++) {
-            System.out.println("Employee [" + (i + 1) + "] = " + list.get(i));
-        }
+        writeString(json, outputJsonFileName); // Write json data to file
 
     }
 
-    public static String readString(String fileName) throws IOException {
-        FileInputStream fileInputStream = null;
-        String data="";
-        StringBuilder stringBuffer = new StringBuilder();
-        try{
-            fileInputStream=new FileInputStream(fileName);
-            int i;
-            while((i=fileInputStream.read())!=-1)
-            {
-                stringBuffer.append((char)i);
-            }
-            data = stringBuffer.toString();
-        }
-        catch(Exception e){
-            e.printStackTrace();
-        }
-        finally{
-            if(fileInputStream!=null){
-                fileInputStream.close();
-            }
-        }
-        return data;
-    }
-
-    public static List<Employee> jsonToList(String json) throws ParseException {
+    // Method to parse csv into list of objects
+    public static List<Employee> parseCSV(String[] columnMapping, String fileName) throws FileNotFoundException {
 
         List<Employee> list = new ArrayList<>();
 
-        JSONParser parser = new JSONParser();
-        JSONArray array = (JSONArray) parser.parse(json);
+        try {
+            CSVReader reader = new CSVReader(new FileReader(fileName));
+            ColumnPositionMappingStrategy<Employee> strategy = new ColumnPositionMappingStrategy<>();
+            strategy.setType(Employee.class);
+            strategy.setColumnMapping(columnMapping);
 
-        for (int i = 0; i < array.size(); i++) {
-            GsonBuilder builder = new GsonBuilder();
-            Gson gson = builder.create();
-            JSONObject jsonObject = (JSONObject) array.get(i);
-            Employee employee = gson.fromJson(String.valueOf(jsonObject), Employee.class);
+            CsvToBean<Employee> csv = new CsvToBeanBuilder<Employee>(reader)
+                    .withMappingStrategy(strategy)
+                    .build();
 
-            list.add(employee);
+            list = csv.parse();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            throw e;
         }
         return list;
     }
 
+    // Method to transfer list of objects to json
+    public static String listToJson(List<Employee> list) {
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
 
+        return gson.toJson(list);
+    }
+
+    // Method to write json data into file
+    public static void writeString(String stringToWrite, String fileName) {
+        try (FileWriter file = new
+                FileWriter(fileName)) {
+            file.write(stringToWrite);
+            file.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
